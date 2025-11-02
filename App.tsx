@@ -157,6 +157,9 @@ const App: React.FC = () => {
             </button>
           )}
         </header>
+        <div className="bg-yellow-500 text-black text-center p-2 font-bold text-sm">
+          AI features have been disabled. App is running with mock data.
+        </div>
         <div className="flex-1 overflow-y-auto p-4 sm:p-6">
           {renderView()}
         </div>

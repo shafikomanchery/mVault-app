@@ -7,7 +7,8 @@ const callProxy = async (service: string, args: any[] = []) => {
     });
 
     if (!response.ok) {
-        throw new Error(`Proxy call failed for ${service}: ${response.statusText}`);
+        const errorText = await response.text();
+        throw new Error(`Proxy call failed for ${service}: ${response.statusText} - ${errorText}`);
     }
     return response.json();
 }
@@ -20,33 +21,6 @@ export const generateStrongPassword = async (): Promise<string> => {
     return "Error!CouldNotGenerate1";
   }
 };
-
-export const analyzeAccountCriticality = async (accountType: string, name: string): Promise<'High' | 'Medium' | 'Low'> => {
-  try {
-    const criticality = await callProxy("analyzeAccountCriticality", [accountType, name]);
-    if (criticality === 'High' || criticality === 'Medium' || criticality === 'Low') {
-      return criticality;
-    }
-    return 'Medium';
-  } catch (error) {
-    console.error("Error analyzing criticality:", error);
-    return 'Medium';
-  }
-};
-
-
-export const analyzeItemCriticality = async (title: string, content: string): Promise<'High' | 'Medium' | 'Low'> => {
-    try {
-        const criticality = await callProxy("analyzeItemCriticality", [title, content]);
-        if (criticality === 'High' || criticality === 'Medium' || criticality === 'Low') {
-            return criticality;
-        }
-        return 'Medium';
-    } catch (error) {
-        console.error("Error analyzing item criticality:", error);
-        return 'Medium';
-    }
-}
 
 export const detectSensitiveData = async (content: string): Promise<string | null> => {
     try {

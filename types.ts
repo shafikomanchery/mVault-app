@@ -2,7 +2,7 @@ export type View = 'dashboard' | 'vault' | 'notes' | 'events' | 'todos';
 
 export type Criticality = 'High' | 'Medium' | 'Low';
 
-export type AccountType = 'bank' | 'email' | 'website' | 'subscription';
+export type AccountType = 'bank' | 'email' | 'website' | 'subscription' | 'other';
 
 export interface HistoryEntry {
   timestamp: string;

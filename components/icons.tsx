@@ -1,3 +1,4 @@
+
 import React from 'react';
 
 type IconProps = React.SVGProps<SVGSVGElement> & { className?: string };
@@ -7,6 +8,21 @@ const Icon: React.FC<IconProps> = ({ children, ...props }) => (
         {children}
     </svg>
 );
+
+// FIX: Changed props type from React.SVGProps<SVGSVGElement> to React.ComponentProps<'div'> to match the returned div element.
+export const MVaultLogo = (props: React.ComponentProps<'div'>) => (
+    <div className="flex items-center gap-2" {...props}>
+        <svg viewBox="0 0 100 100" fill="none" xmlns="http://www.w3.org/2000/svg" className="h-8 w-8">
+            <path d="M50 5L10 25V55C10 82.5 50 95 50 95C50 95 90 82.5 90 55V25L50 5Z" className="text-blue-600" fill="currentColor"/>
+            {/* Engraving Effect: Shadow layer */}
+            <path d="M35 70L42.5 50L50 65L57.5 50L65 70" stroke="rgba(0,0,0,0.2)" strokeWidth="8" strokeLinecap="round" strokeLinejoin="round" transform="translate(0.5, 1)"/>
+            {/* Original M Path */}
+            <path d="M35 70L42.5 50L50 65L57.5 50L65 70" stroke="white" strokeWidth="8" strokeLinecap="round" strokeLinejoin="round"/>
+        </svg>
+        <span className="text-2xl font-bold text-white">mVault</span>
+    </div>
+);
+
 
 export const LayoutDashboardIcon = (props: IconProps) => <Icon {...props}><rect width="7" height="9" x="3" y="3" rx="1" /><rect width="7" height="5" x="14" y="3" rx="1" /><rect width="7" height="9" x="14" y="12" rx="1" /><rect width="7" height="5" x="3" y="16" rx="1" /></Icon>;
 export const VaultIcon = (props: IconProps) => <Icon {...props}><rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect><path d="M7 11V7a5 5 0 0 1 10 0v4"></path></Icon>;
@@ -25,3 +41,5 @@ export const ImportIcon = (props: IconProps) => <Icon {...props}><path d="M21 15
 export const HistoryIcon = (props: IconProps) => <Icon {...props}><path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8" /><path d="M3 3v5h5" /></Icon>;
 export const RecurringIcon = (props: IconProps) => <Icon {...props}><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7" /><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z" /></Icon>;
 export const CheckSquareIcon = (props: IconProps) => <Icon {...props}><polyline points="9 11 12 14 22 4" /><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11" /></Icon>;
+export const AlertTriangleIcon = (props: IconProps) => <Icon {...props}><path d="m21.73 18-8-14a2 2 0 0 0-3.46 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3Z" /><path d="M12 9v4" /><path d="M12 17h.01" /></Icon>;
+export const RotateCwIcon = (props: IconProps) => <Icon {...props}><path d="M21 2v6h-6"/><path d="M3 12a9 9 0 1 1 1.646-5.26L3 8"/></Icon>;

@@ -1,4 +1,3 @@
-
 import React from 'react';
 import { Modal } from './Shared';
 import { MVaultLogo } from './icons';
@@ -28,6 +27,12 @@ export const AboutModal: React.FC<{ onClose: () => void }> = ({ onClose }) => {
                     <li>IndexedDB for Offline Storage</li>
                     <li>Client-Side CSV Processing</li>
                 </ul>
+
+                <h4 className="font-bold text-white mt-6 border-b border-gray-700 pb-2">Developer</h4>
+                <div className="text-gray-300">
+                    <p>Created by <strong className="text-white">Mohammed Shafi</strong></p>
+                    <p className="mt-1 text-gray-400">Contact: <a href="mailto:shafihussainkk@gmail.com" className="text-blue-400 hover:underline">shafihussainkk@gmail.com</a></p>
+                </div>
             </div>
 
             <div className="mt-8 pt-6 border-t border-gray-700 text-center">

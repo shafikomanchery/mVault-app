@@ -9,17 +9,50 @@ const Icon: React.FC<IconProps> = ({ children, ...props }) => (
     </svg>
 );
 
-// FIX: Changed props type from React.SVGProps<SVGSVGElement> to React.ComponentProps<'div'> to match the returned div element.
-export const MVaultLogo = (props: React.ComponentProps<'div'>) => (
-    <div className="flex items-center gap-2" {...props}>
-        <svg viewBox="0 0 100 100" fill="none" xmlns="http://www.w3.org/2000/svg" className="h-8 w-8">
-            <path d="M50 5L10 25V55C10 82.5 50 95 50 95C50 95 90 82.5 90 55V25L50 5Z" className="text-blue-600" fill="currentColor"/>
-            {/* Engraving Effect: Shadow layer */}
-            <path d="M35 70L42.5 50L50 65L57.5 50L65 70" stroke="rgba(0,0,0,0.2)" strokeWidth="8" strokeLinecap="round" strokeLinejoin="round" transform="translate(0.5, 1)"/>
-            {/* Original M Path */}
-            <path d="M35 70L42.5 50L50 65L57.5 50L65 70" stroke="white" strokeWidth="8" strokeLinecap="round" strokeLinejoin="round"/>
+// FIX: Destructure className to merge it with default classes instead of overwriting them
+export const MVaultLogo = ({ className, ...props }: React.ComponentProps<'div'>) => (
+    <div className={`flex items-center gap-3 ${className || ''}`} {...props}>
+        <svg viewBox="0 0 100 100" fill="none" xmlns="http://www.w3.org/2000/svg" className="h-12 w-12 drop-shadow-lg">
+            <defs>
+                <linearGradient id="shieldGrad" x1="0" y1="0" x2="100" y2="100" gradientUnits="userSpaceOnUse">
+                    <stop offset="0%" stopColor="#0ea5e9" /> {/* Sky Blue 500 - Pleasant & Bright */}
+                    <stop offset="100%" stopColor="#2563eb" /> {/* Blue 600 - Deep & Secure */}
+                </linearGradient>
+                <filter id="inner-shadow" x="-50%" y="-50%" width="200%" height="200%">
+                    <feComponentTransfer in="SourceAlpha">
+                        <feFuncA type="table" tableValues="1 0" />
+                    </feComponentTransfer>
+                    <feGaussianBlur stdDeviation="2" />
+                    <feOffset dx="1" dy="2" result="offsetblur" />
+                    <feFlood floodColor="rgba(0,0,0,0.2)" />
+                    <feComposite in2="offsetblur" operator="in" />
+                    <feComposite in2="SourceAlpha" operator="in" />
+                    <feMerge>
+                        <feMergeNode in="SourceGraphic" />
+                        <feMergeNode />
+                    </feMerge>
+                </filter>
+            </defs>
+            
+            {/* Shield Body */}
+            <path d="M50 96C20 82 10 55 10 25L50 5L90 25C90 55 80 82 50 96Z" fill="url(#shieldGrad)" stroke="#1e40af" strokeWidth="2" filter="url(#inner-shadow)" />
+            
+            {/* Glossy Reflection on Top Right */}
+            <path d="M50 5L90 25C90 45 85 60 75 75C85 55 80 30 50 15V5Z" fill="white" fillOpacity="0.15" />
+
+            {/* Engraved M */}
+            <g transform="translate(0, 3)"> 
+                 {/* 1. Highlight (Bottom/Right Edge of cut) */}
+                <path d="M28 70 L28 30 L50 55 L72 30 L72 70" stroke="rgba(255,255,255,0.25)" strokeWidth="11" strokeLinecap="round" strokeLinejoin="round" fill="none" transform="translate(0.5, 0.5)"/>
+
+                {/* 2. Shadow (Top/Left Edge of cut) */}
+                <path d="M28 70 L28 30 L50 55 L72 30 L72 70" stroke="rgba(0,0,0,0.4)" strokeWidth="11" strokeLinecap="round" strokeLinejoin="round" fill="none" transform="translate(-0.5, -0.5)"/>
+
+                {/* 3. The Groove Base (Darker Blue) */}
+                <path d="M28 70 L28 30 L50 55 L72 30 L72 70" stroke="#0c4a6e" strokeWidth="9" strokeLinecap="round" strokeLinejoin="round" fill="none" />
+            </g>
         </svg>
-        <span className="text-2xl font-bold text-white">mVault</span>
+        <span className="text-2xl font-bold text-white tracking-wider" style={{ textShadow: '0 2px 4px rgba(0,0,0,0.5)' }}>mVault</span>
     </div>
 );
 
@@ -43,3 +76,5 @@ export const RecurringIcon = (props: IconProps) => <Icon {...props}><path d="M11
 export const CheckSquareIcon = (props: IconProps) => <Icon {...props}><polyline points="9 11 12 14 22 4" /><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11" /></Icon>;
 export const AlertTriangleIcon = (props: IconProps) => <Icon {...props}><path d="m21.73 18-8-14a2 2 0 0 0-3.46 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3Z" /><path d="M12 9v4" /><path d="M12 17h.01" /></Icon>;
 export const RotateCwIcon = (props: IconProps) => <Icon {...props}><path d="M21 2v6h-6"/><path d="M3 12a9 9 0 1 1 1.646-5.26L3 8"/></Icon>;
+export const CopyIcon = (props: IconProps) => <Icon {...props}><rect x="9" y="9" width="13" height="13" rx="2" ry="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></Icon>;
+export const CheckIcon = (props: IconProps) => <Icon {...props}><polyline points="20 6 9 17 4 12"/></Icon>;

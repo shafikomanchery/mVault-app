@@ -1,3 +1,4 @@
+
 export type View = 'dashboard' | 'vault' | 'notes' | 'events' | 'todos';
 
 export type Criticality = 'High' | 'Medium' | 'Low';
@@ -23,7 +24,6 @@ export interface Account {
   history: HistoryEntry[];
   priority: number;
   criticality: Criticality;
-  // FIX: Added for consistency across all vault items
   createdAt: string;
 }
 
@@ -51,7 +51,6 @@ export interface Event {
   description: string;
   recurring: RecurringFrequency;
   criticality: Criticality;
-  // FIX: Added for consistency across all vault items
   createdAt: string;
 }
 
@@ -68,9 +67,20 @@ export interface Todo {
     completed: boolean;
     subtasks: Subtask[];
     createdAt: string;
-    // FIX: Added for consistency across all vault items
     criticality: Criticality;
 }
 
 
 export type VaultItem = Account | Note | Event | Todo;
+
+export interface FormProps<T extends VaultItem> {
+    onSave: (item: T) => void;
+    onClose: () => void;
+    itemToEdit?: T | null;
+}
+
+export interface EncryptedData {
+    salt: string;
+    iv: string;
+    ciphertext: string;
+}

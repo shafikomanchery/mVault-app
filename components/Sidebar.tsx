@@ -46,59 +46,70 @@ const Sidebar: React.FC<SidebarProps> = ({ view, setView, isOpen, setOpen, onImp
     const NavItem: React.FC<{ targetView: View; icon: React.ReactNode; label: string }> = ({ targetView, icon, label }) => (
       <button
         onClick={() => { setView(targetView); if (window.innerWidth < 768) setOpen(false); }}
-        className={`flex items-center w-full px-4 py-3 text-left text-gray-300 hover:bg-gray-700 hover:text-white rounded-lg transition-colors ${view === targetView ? 'bg-gray-700 text-white' : ''}`}
+        className={`flex items-center w-full px-4 py-3 text-left transition-all rounded-xl group ${
+            view === targetView 
+            ? 'bg-blue-600/10 border border-blue-500/20 text-blue-400' 
+            : 'text-gray-400 hover:bg-gray-700/50 hover:text-white border border-transparent'
+        }`}
       >
-        {icon}
-        <span className="ml-3 font-medium">{label}</span>
+        <span className={`${view === targetView ? 'text-blue-400' : 'text-gray-500 group-hover:text-gray-300'}`}>
+            {icon}
+        </span>
+        <span className="ml-3 font-semibold text-sm tracking-wide">{label}</span>
+        {view === targetView && <div className="ml-auto w-1.5 h-1.5 rounded-full bg-blue-500 shadow-sm shadow-blue-500/50" />}
       </button>
     );
   
     return (
       <>
-        <div className={`fixed inset-0 bg-black bg-opacity-50 z-30 md:hidden transition-opacity ${isOpen ? 'opacity-100' : 'opacity-0 pointer-events-none'}`} onClick={() => setOpen(false)}></div>
-        <aside className={`fixed md:relative top-0 left-0 h-full bg-gray-800 shadow-lg transition-transform duration-300 z-40 ${isOpen ? 'translate-x-0' : '-translate-x-full'} md:translate-x-0 w-64 flex-shrink-0 flex flex-col border-r border-gray-700`}>
-            <div className="px-4 py-6 border-b border-gray-700">
+        <div className={`fixed inset-0 bg-black bg-opacity-60 backdrop-blur-sm z-30 md:hidden transition-opacity ${isOpen ? 'opacity-100' : 'opacity-0 pointer-events-none'}`} onClick={() => setOpen(false)}></div>
+        <aside className={`fixed md:relative top-0 left-0 h-full bg-[#0f172a] shadow-2xl transition-transform duration-300 z-40 ${isOpen ? 'translate-x-0' : '-translate-x-full'} md:translate-x-0 w-64 flex-shrink-0 flex flex-col border-r border-gray-800/50`}>
+            <div className="px-6 py-8 border-b border-gray-800/50">
                 <MVaultLogo />
             </div>
             
-            <nav className="flex-1 p-4 space-y-2 overflow-y-auto">
-                <div className="mb-6">
-                    <p className="px-4 text-xs font-semibold text-gray-500 uppercase tracking-wider mb-2">Apps</p>
-                    <NavItem targetView="dashboard" icon={<LayoutDashboardIcon className="w-5 h-5" />} label="Dashboard" />
-                    <NavItem targetView="vault" icon={<VaultIcon className="w-5 h-5" />} label="Vault" />
-                    <NavItem targetView="notes" icon={<StickyNoteIcon className="w-5 h-5" />} label="Notes" />
-                    <NavItem targetView="events" icon={<CalendarIcon className="w-5 h-5" />} label="Events" />
-                    <NavItem targetView="todos" icon={<ListTodoIcon className="w-5 h-5" />} label="Todos" />
+            <nav className="flex-1 p-4 space-y-2 overflow-y-auto custom-scrollbar">
+                <div className="mb-8">
+                    <p className="px-4 text-[10px] font-bold text-gray-600 uppercase tracking-[0.2em] mb-4">Core Vault</p>
+                    <div className="space-y-1">
+                        <NavItem targetView="dashboard" icon={<LayoutDashboardIcon className="w-5 h-5" />} label="Dashboard" />
+                        <NavItem targetView="vault" icon={<VaultIcon className="w-5 h-5" />} label="Passwords" />
+                        <NavItem targetView="notes" icon={<StickyNoteIcon className="w-5 h-5" />} label="Secure Notes" />
+                        <NavItem targetView="events" icon={<CalendarIcon className="w-5 h-5" />} label="Key Dates" />
+                        <NavItem targetView="todos" icon={<ListTodoIcon className="w-5 h-5" />} label="Security Tasks" />
+                    </div>
                 </div>
 
                 <div>
-                    <p className="px-4 text-xs font-semibold text-gray-500 uppercase tracking-wider mb-2">Data & Security</p>
-                    <button onClick={onImport} className="flex items-center w-full px-4 py-2.5 text-left text-gray-400 hover:bg-gray-700 hover:text-white rounded-lg transition-colors">
-                        <ImportIcon className="w-5 h-5" /> <span className="ml-3 text-sm">Import Vault</span>
-                    </button>
-                    <button onClick={onExport} className="flex items-center w-full px-4 py-2.5 text-left text-gray-400 hover:bg-gray-700 hover:text-white rounded-lg transition-colors">
-                        <DownloadIcon className="w-5 h-5" /> <span className="ml-3 text-sm">Export Vault</span>
-                    </button>
-                    <button onClick={onLock} className="flex items-center w-full px-4 py-2.5 text-left text-red-400 hover:bg-red-900/30 hover:text-red-300 rounded-lg transition-colors mt-1">
-                        <LockIcon className="w-5 h-5" /> <span className="ml-3 text-sm font-medium">Lock Vault</span>
-                    </button>
+                    <p className="px-4 text-[10px] font-bold text-gray-600 uppercase tracking-[0.2em] mb-4">Data Portability</p>
+                    <div className="space-y-1">
+                        <button onClick={onImport} className="flex items-center w-full px-4 py-3 text-left text-gray-400 hover:bg-gray-700/40 hover:text-white rounded-xl transition-all border border-transparent group">
+                            <ImportIcon className="w-5 h-5 text-gray-500 group-hover:text-blue-400" /> <span className="ml-3 text-sm font-medium">Import JSON/CSV</span>
+                        </button>
+                        <button onClick={onExport} className="flex items-center w-full px-4 py-3 text-left text-gray-400 hover:bg-gray-700/40 hover:text-white rounded-xl transition-all border border-transparent group">
+                            <DownloadIcon className="w-5 h-5 text-gray-500 group-hover:text-green-400" /> <span className="ml-3 text-sm font-medium">Export Vault...</span>
+                        </button>
+                        <button onClick={onLock} className="flex items-center w-full px-4 py-3 text-left text-red-400 hover:bg-red-500/10 hover:text-red-300 rounded-xl transition-all border border-transparent mt-2">
+                            <LockIcon className="w-5 h-5" /> <span className="ml-3 text-sm font-bold tracking-wide">LOCK VAULT</span>
+                        </button>
+                    </div>
                 </div>
             </nav>
 
-            <div className="p-4 border-t border-gray-700 bg-gray-900/50">
+            <div className="p-4 border-t border-gray-800/50 bg-[#1e293b]/20">
                 <div className="grid grid-cols-2 gap-2 mb-4">
-                    <button onClick={onShowAbout} className="flex flex-col items-center justify-center p-2 rounded bg-gray-800 hover:bg-gray-700 text-gray-400 hover:text-white transition-colors">
-                        <InfoIcon className="w-5 h-5 mb-1" />
-                        <span className="text-[10px]">About</span>
+                    <button onClick={onShowAbout} className="flex flex-col items-center justify-center p-3 rounded-xl bg-gray-800/40 hover:bg-gray-800 text-gray-500 hover:text-white transition-all border border-gray-700/30">
+                        <InfoIcon className="w-4 h-4 mb-1" />
+                        <span className="text-[9px] font-bold uppercase tracking-widest">About</span>
                     </button>
-                    <button onClick={onShowPrivacy} className="flex flex-col items-center justify-center p-2 rounded bg-gray-800 hover:bg-gray-700 text-gray-400 hover:text-white transition-colors">
-                        <ShieldIcon className="w-5 h-5 mb-1" />
-                        <span className="text-[10px]">Privacy</span>
+                    <button onClick={onShowPrivacy} className="flex flex-col items-center justify-center p-3 rounded-xl bg-gray-800/40 hover:bg-gray-800 text-gray-500 hover:text-white transition-all border border-gray-700/30">
+                        <ShieldIcon className="w-4 h-4 mb-1" />
+                        <span className="text-[9px] font-bold uppercase tracking-widest">Privacy</span>
                     </button>
                 </div>
-                <div className="text-center">
-                    <p className="text-[10px] text-gray-600">&copy; {new Date().getFullYear()} mVault Security.</p>
-                    <p className="text-[10px] text-gray-600">All rights reserved.</p>
+                <div className="text-center pb-2">
+                    <p className="text-[9px] text-gray-600 font-bold tracking-tighter">&copy; {new Date().getFullYear()} MVAULT SECURITY SYSTEMS</p>
+                    <p className="text-[8px] text-gray-700 mt-1 uppercase tracking-widest font-medium">End-to-End Encrypted</p>
                 </div>
             </div>
         </aside>

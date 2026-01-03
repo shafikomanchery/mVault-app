@@ -9,54 +9,26 @@ const Icon: React.FC<IconProps> = ({ children, ...props }) => (
     </svg>
 );
 
-// FIX: Destructure className to merge it with default classes instead of overwriting them
 export const MVaultLogo = ({ className, ...props }: React.ComponentProps<'div'>) => (
     <div className={`flex items-center gap-3 ${className || ''}`} {...props}>
         <svg viewBox="0 0 100 100" fill="none" xmlns="http://www.w3.org/2000/svg" className="h-12 w-12 drop-shadow-lg">
             <defs>
                 <linearGradient id="shieldGrad" x1="0" y1="0" x2="100" y2="100" gradientUnits="userSpaceOnUse">
-                    <stop offset="0%" stopColor="#0ea5e9" /> {/* Sky Blue 500 - Pleasant & Bright */}
-                    <stop offset="100%" stopColor="#2563eb" /> {/* Blue 600 - Deep & Secure */}
+                    <stop offset="0%" stopColor="#0ea5e9" />
+                    <stop offset="100%" stopColor="#2563eb" />
                 </linearGradient>
-                <filter id="inner-shadow" x="-50%" y="-50%" width="200%" height="200%">
-                    <feComponentTransfer in="SourceAlpha">
-                        <feFuncA type="table" tableValues="1 0" />
-                    </feComponentTransfer>
-                    <feGaussianBlur stdDeviation="2" />
-                    <feOffset dx="1" dy="2" result="offsetblur" />
-                    <feFlood floodColor="rgba(0,0,0,0.2)" />
-                    <feComposite in2="offsetblur" operator="in" />
-                    <feComposite in2="SourceAlpha" operator="in" />
-                    <feMerge>
-                        <feMergeNode in="SourceGraphic" />
-                        <feMergeNode />
-                    </feMerge>
-                </filter>
             </defs>
-            
-            {/* Shield Body */}
-            <path d="M50 96C20 82 10 55 10 25L50 5L90 25C90 55 80 82 50 96Z" fill="url(#shieldGrad)" stroke="#1e40af" strokeWidth="2" filter="url(#inner-shadow)" />
-            
-            {/* Glossy Reflection on Top Right */}
-            <path d="M50 5L90 25C90 45 85 60 75 75C85 55 80 30 50 15V5Z" fill="white" fillOpacity="0.15" />
-
-            {/* Engraved M */}
-            <g transform="translate(0, 3)"> 
-                 {/* 1. Highlight (Bottom/Right Edge of cut) */}
-                <path d="M28 70 L28 30 L50 55 L72 30 L72 70" stroke="rgba(255,255,255,0.25)" strokeWidth="11" strokeLinecap="round" strokeLinejoin="round" fill="none" transform="translate(0.5, 0.5)"/>
-
-                {/* 2. Shadow (Top/Left Edge of cut) */}
-                <path d="M28 70 L28 30 L50 55 L72 30 L72 70" stroke="rgba(0,0,0,0.4)" strokeWidth="11" strokeLinecap="round" strokeLinejoin="round" fill="none" transform="translate(-0.5, -0.5)"/>
-
-                {/* 3. The Groove Base (Darker Blue) */}
-                <path d="M28 70 L28 30 L50 55 L72 30 L72 70" stroke="#0c4a6e" strokeWidth="9" strokeLinecap="round" strokeLinejoin="round" fill="none" />
-            </g>
+            <path d="M50 96C20 82 10 55 10 25L50 5L90 25C90 55 80 82 50 96Z" fill="url(#shieldGrad)" stroke="#1e40af" strokeWidth="2" />
+            <path d="M28 70 L28 30 L50 55 L72 30 L72 70" stroke="white" strokeWidth="9" strokeLinecap="round" strokeLinejoin="round" fill="none" />
         </svg>
-        <span className="text-2xl font-bold text-white tracking-wider" style={{ textShadow: '0 2px 4px rgba(0,0,0,0.5)' }}>mVault</span>
+        <span className="text-2xl font-bold text-white tracking-wider">mVault</span>
     </div>
 );
 
-
+export const SearchIcon = (props: IconProps) => <Icon {...props}><circle cx="11" cy="11" r="8" /><path d="m21 21-4.3-4.3" /></Icon>;
+export const ShieldCheckIcon = (props: IconProps) => <Icon {...props}><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" /><path d="m9 12 2 2 4-4" /></Icon>;
+export const TagIcon = (props: IconProps) => <Icon {...props}><path d="M12 2H2v10l9.29 9.29a1 1 0 0 0 1.41 0l8.59-8.59a1 1 0 0 0 0-1.41z" /><path d="M7 7h.01" /></Icon>;
+export const KeyIcon = (props: IconProps) => <Icon {...props}><path d="m21 2-1.96 1.96" /><circle cx="7.5" cy="15.5" r="5.5" /><path d="m21 2-9.4 9.4" /><path d="m18 5 3 3" /><path d="m15 8 3 3" /></Icon>;
 export const LayoutDashboardIcon = (props: IconProps) => <Icon {...props}><rect width="7" height="9" x="3" y="3" rx="1" /><rect width="7" height="5" x="14" y="3" rx="1" /><rect width="7" height="9" x="14" y="12" rx="1" /><rect width="7" height="5" x="3" y="16" rx="1" /></Icon>;
 export const VaultIcon = (props: IconProps) => <Icon {...props}><rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect><path d="M7 11V7a5 5 0 0 1 10 0v4"></path></Icon>;
 export const StickyNoteIcon = (props: IconProps) => <Icon {...props}><path d="M15.5 3H5a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V8.5L15.5 3Z" /><path d="M15 3v6h6" /></Icon>;
@@ -67,7 +39,7 @@ export const TrashIcon = (props: IconProps) => <Icon {...props}><path d="M3 6h18
 export const EditIcon = (props: IconProps) => <Icon {...props}><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7" /><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z" /></Icon>;
 export const EyeIcon = (props: IconProps) => <Icon {...props}><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z" /><circle cx="12" cy="12" r="3" /></Icon>;
 export const EyeOffIcon = (props: IconProps) => <Icon {...props}><path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24" /><line x1="1" y1="1" x2="23" y2="23" /></Icon>;
-export const SparklesIcon = (props: IconProps) => <Icon {...props}><path d="m12 3-1.9 4.2-4.3.6 3.1 3- .7 4.2 3.8-2 3.8 2-.7-4.2 3.1-3-4.3-.6L12 3z" /><path d="M5 11.5 3.5 13l-1.5-1.5" /><path d="M19 11.5 20.5 13l1.5-1.5" /><path d="m12 21 1.9-4.2 4.3-.6-3.1-3 .7-4.2-3.8 2-3.8-2 .7 4.2-3.1 3 4.3.6L12 21z" /></Icon>;
+export const SparklesIcon = (props: IconProps) => <Icon {...props}><path d="m12 3-1.9 4.2-4.3.6 3.1 3-.7 4.2 3.8-2 3.8 2-.7-4.2 3.1-3-4.3-.6L12 3z" /><path d="M5 11.5 3.5 13l-1.5-1.5" /><path d="M19 11.5 20.5 13l1.5-1.5" /><path d="m12 21 1.9-4.2 4.3-.6-3.1-3 .7-4.2-3.8 2-3.8-2 .7 4.2-3.1 3 4.3.6L12 21z" /></Icon>;
 export const MenuIcon = (props: IconProps) => <Icon {...props}><line x1="4" x2="20" y1="12" y2="12" /><line x1="4" x2="20" y1="6" y2="6" /><line x1="4" x2="20" y1="18" y2="18" /></Icon>;
 export const DownloadIcon = (props: IconProps) => <Icon {...props}><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" /><polyline points="7 10 12 15 17 10" /><line x1="12" x2="12" y1="15" y2="3" /></Icon>;
 export const ImportIcon = (props: IconProps) => <Icon {...props}><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" /><polyline points="17 8 12 3 7 8" /><line x1="12" x2="12" y1="3" y2="15" /></Icon>;

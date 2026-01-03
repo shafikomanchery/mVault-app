@@ -2,6 +2,7 @@
 import React, { useState, useEffect } from 'react';
 import { EncryptedData, VaultItem } from '../types';
 import { createVault, unlockVault } from '../utils/security';
+import { authenticateBiometrics } from '../utils/biometrics';
 import { ShieldCheckIcon, TrashIcon, KeyIcon } from './icons';
 
 type AuthMode = 'login' | 'setup' | 'migration';
@@ -20,39 +21,29 @@ const AuthScreen: React.FC<AuthScreenProps> = ({ mode, encryptedData, legacyData
     const [trustDevice, setTrustDevice] = useState(false);
     const [error, setError] = useState<string | null>(null);
     const [isLoading, setIsLoading] = useState(false);
-    const [canUseBiometrics, setCanUseBiometrics] = useState(false);
+    const [hasBioSetup, setHasBioSetup] = useState(false);
 
     useEffect(() => {
-        // Check if biometric/secure hardware is available
-        if (window.PublicKeyCredential && mode === 'login') {
-            const hasExistingKey = localStorage.getItem('mvault_remembered_key');
-            if (hasExistingKey) {
-                setCanUseBiometrics(true);
-            }
+        if (mode === 'login') {
+            const hasKey = !!localStorage.getItem('mvault_biometric_id');
+            setHasBioSetup(hasKey);
         }
     }, [mode]);
 
     const handleBiometricUnlock = async () => {
-        setIsLoading(true);
         setError(null);
+        setIsLoading(true);
         
         try {
-            // In a real production app with a backend, we'd use WebAuthn here.
-            // For this local-first version, we simulate the biometric verification
-            // and retrieve the stored key.
-            const storedKeyBase64 = localStorage.getItem('mvault_remembered_key');
-            if (!storedKeyBase64) {
-                throw new Error("No remembered key found.");
+            const retrievedPassword = await authenticateBiometrics();
+            if (retrievedPassword && encryptedData) {
+                const { key, data } = await unlockVault(retrievedPassword, encryptedData);
+                onAuthenticated(key, data, encryptedData);
+            } else {
+                setError("Biometric verification failed or canceled.");
             }
-
-            await new Promise(r => setTimeout(r, 1000)); // Simulate hardware check
-            
-            // To actually unlock, we need the password. Biometrics usually unlock a
-            // "Vault Token" that replaces the need for the password.
-            // For now, we show the prompt for the Master Password as the 'primary' key.
-            setError("Biometric identity verified. Please enter your Master Password to confirm decryption.");
         } catch (err) {
-            setError("Biometric unlock failed. Please use your Master Password.");
+            setError("Could not complete biometric scan.");
         } finally {
             setIsLoading(false);
         }
@@ -62,18 +53,11 @@ const AuthScreen: React.FC<AuthScreenProps> = ({ mode, encryptedData, legacyData
         e.preventDefault();
         setError(null);
         setIsLoading(true);
-        await new Promise(resolve => setTimeout(resolve, 300));
 
         try {
             if (mode === 'login' && encryptedData) {
                 try {
                     const { key, data } = await unlockVault(password, encryptedData);
-                    
-                    if (trustDevice) {
-                        // Store a hint that we can use biometrics next time
-                        localStorage.setItem('mvault_remembered_key', 'active');
-                    }
-
                     onAuthenticated(key, data, encryptedData);
                 } catch (err) {
                     setError("Invalid Master Password.");
@@ -112,20 +96,7 @@ const AuthScreen: React.FC<AuthScreenProps> = ({ mode, encryptedData, legacyData
 
                     <form onSubmit={handleSubmit} className="space-y-5">
                         <div className="space-y-2">
-                            <div className="flex justify-between items-end mb-1">
-                                <label className="text-[10px] font-bold text-gray-500 uppercase ml-1">Master Password</label>
-                                {mode === 'login' && (
-                                    <label className="flex items-center gap-2 cursor-pointer group">
-                                        <input 
-                                            type="checkbox" 
-                                            checked={trustDevice} 
-                                            onChange={(e) => setTrustDevice(e.target.checked)}
-                                            className="w-3 h-3 rounded border-gray-600 bg-gray-900 text-blue-600 focus:ring-0" 
-                                        />
-                                        <span className="text-[10px] font-bold text-gray-500 uppercase group-hover:text-blue-400 transition-colors">Trust this device</span>
-                                    </label>
-                                )}
-                            </div>
+                            <label className="text-[10px] font-bold text-gray-500 uppercase ml-1">Master Password</label>
                             <input
                                 type="password"
                                 value={password}
@@ -150,7 +121,7 @@ const AuthScreen: React.FC<AuthScreenProps> = ({ mode, encryptedData, legacyData
                         )}
 
                         {error && (
-                            <div className="p-3 bg-red-500/10 border border-red-500/20 text-red-400 text-xs rounded-xl flex items-start gap-2">
+                            <div className="p-3 bg-red-500/10 border border-red-500/20 text-red-400 text-[10px] rounded-xl flex items-start gap-2">
                                 <span className="mt-0.5">•</span>
                                 <span>{error}</span>
                             </div>
@@ -161,28 +132,19 @@ const AuthScreen: React.FC<AuthScreenProps> = ({ mode, encryptedData, legacyData
                             disabled={isLoading || !password}
                             className="w-full py-4 bg-blue-600 hover:bg-blue-500 rounded-2xl text-white font-bold shadow-xl shadow-blue-900/20 transition-all active:scale-[0.98] disabled:opacity-50"
                         >
-                            {mode === 'login' ? 'UNLOCK SECURELY' : 'CREATE MASTER VAULT'}
+                            {mode === 'login' ? 'UNLOCK WITH PASSWORD' : 'CREATE MASTER VAULT'}
                         </button>
 
-                        {mode === 'login' && (
+                        {mode === 'login' && hasBioSetup && (
                             <div className="pt-4 border-t border-gray-700/50">
                                 <button 
                                     type="button" 
                                     onClick={handleBiometricUnlock}
-                                    className={`w-full py-4 rounded-2xl font-bold flex items-center justify-center gap-3 transition-all ${
-                                        canUseBiometrics 
-                                        ? 'bg-gray-700/30 hover:bg-gray-700/50 border border-gray-700/50 text-gray-300' 
-                                        : 'bg-gray-800/20 border border-gray-800/50 text-gray-600 cursor-not-allowed'
-                                    }`}
+                                    className="w-full py-4 rounded-2xl font-bold flex items-center justify-center gap-3 transition-all bg-gray-700/30 hover:bg-gray-700/50 border border-gray-700/50 text-blue-400"
                                 >
-                                    <KeyIcon className={`w-5 h-5 ${canUseBiometrics ? 'text-blue-400' : 'text-gray-600'}`} />
-                                    <span>{canUseBiometrics ? 'SECURE BIOMETRIC UNLOCK' : 'BIOMETRICS NOT LINKED'}</span>
+                                    <KeyIcon className="w-5 h-5" />
+                                    <span>QUICK BIOMETRIC UNLOCK</span>
                                 </button>
-                                {!canUseBiometrics && (
-                                    <p className="text-[9px] text-gray-600 text-center mt-3 uppercase tracking-wider leading-relaxed">
-                                        Login once with Master Password and check "Trust this device" <br/> to enable biometric shortcuts.
-                                    </p>
-                                )}
                             </div>
                         )}
                     </form>
@@ -191,7 +153,7 @@ const AuthScreen: React.FC<AuthScreenProps> = ({ mode, encryptedData, legacyData
                 {mode === 'login' && onReset && (
                      <div className="mt-8 text-center">
                         <button onClick={onReset} className="text-[10px] text-red-500/50 hover:text-red-500 uppercase tracking-widest font-bold flex items-center gap-2 mx-auto">
-                            <TrashIcon className="w-3 h-3" /> Factory Data Reset
+                            <TrashIcon className="w-3 h-3" /> Emergency Factory Reset
                         </button>
                      </div>
                 )}

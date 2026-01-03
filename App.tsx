@@ -1,10 +1,11 @@
 
 import React, { useState, useEffect, useCallback, useMemo, useRef } from 'react';
-import { MenuIcon, PlusIcon, AlertTriangleIcon, CheckSquareIcon, SearchIcon } from './components/icons';
+import Dexie from 'dexie';
+import { MenuIcon, PlusIcon, SearchIcon } from './components/icons';
 import useLocalStorage from './hooks/useLocalStorage';
 import {
   View, VaultItem, Account, Note, Event, Todo,
-  RecurringFrequency, AccountType, EncryptedData
+  AccountType, EncryptedData
 } from './types';
 import { saveVault } from './utils/security';
 import { db } from './services/db';
@@ -16,6 +17,7 @@ import HistoryModal from './components/HistoryModal';
 import { ConfirmationModal, Modal } from './components/Shared';
 import AuthScreen from './components/AuthScreen';
 import { AboutModal, PrivacyModal } from './components/InfoModals';
+import { SettingsModal } from './components/SettingsModal';
 
 // Views
 import DashboardView from './views/DashboardView';
@@ -24,7 +26,6 @@ import NotesView from './views/NotesView';
 import EventsView from './views/EventsView';
 import TodosView from './views/TodosView';
 
-const STORAGE_KEY = 'mvault_db';
 const LEGACY_STORAGE_KEY = 'vaultItems';
 const IDLE_TIMEOUT_MS = 5 * 60 * 1000;
 
@@ -40,6 +41,7 @@ const generateUUID = () => {
 
 const App: React.FC = () => {
   const [isLocked, setIsLocked] = useState(true);
+  const [isResetting, setIsResetting] = useState(false);
   const [authMode, setAuthMode] = useState<'login' | 'setup' | 'migration'>('login');
   const [vaultKey, setVaultKey] = useState<CryptoKey | null>(null);
   const [encryptedDataBlob, setEncryptedDataBlob] = useState<EncryptedData | undefined>(undefined);
@@ -52,6 +54,7 @@ const App: React.FC = () => {
   const [isSidebarOpen, setSidebarOpen] = useState(false);
   const [showAbout, setShowAbout] = useState(false);
   const [showPrivacy, setShowPrivacy] = useState(false);
+  const [showSettings, setShowSettings] = useState(false);
   
   const [importError, setImportError] = useState<string | null>(null);
   const [exportType, setExportType] = useState<'JSON' | 'CSV' | null>(null);
@@ -64,6 +67,36 @@ const App: React.FC = () => {
       setAuthMode('login');
       if (idleTimerRef.current) window.clearTimeout(idleTimerRef.current);
   }, []);
+
+  const handleEmergencyReset = async () => {
+      setIsResetting(true);
+      try {
+          // 1. Force close and delete IndexedDB
+          db.close();
+          await Dexie.delete('mVaultDB');
+          
+          // 2. Clear all storage types
+          localStorage.clear();
+          sessionStorage.clear();
+          
+          // 3. Unregister Service Worker if present
+          if ('serviceWorker' in navigator) {
+              const registrations = await navigator.serviceWorker.getRegistrations();
+              for (const registration of registrations) {
+                  await registration.unregister();
+              }
+          }
+
+          // 4. Force hard reload from server
+          setTimeout(() => {
+              window.location.replace(window.location.origin);
+          }, 1000);
+      } catch (err) {
+          console.error("Critical Reset Failure:", err);
+          localStorage.clear();
+          window.location.reload();
+      }
+  };
 
   const resetIdleTimer = useCallback(() => {
       if (isLocked) return;
@@ -142,17 +175,12 @@ const App: React.FC = () => {
           setExportType(null);
           return;
       }
-
-      // CSV Header
       let csvContent = "name,url,username,password,accountType,criticality,tags\n";
-
-      // Helper to escape CSV values
       const escape = (val: string | undefined) => {
           if (!val) return '""';
           const escaped = val.replace(/"/g, '""');
           return `"${escaped}"`;
       };
-
       accounts.forEach(acc => {
           const row = [
               escape(acc.name),
@@ -165,7 +193,6 @@ const App: React.FC = () => {
           ].join(',');
           csvContent += row + "\n";
       });
-
       downloadFile(csvContent, 'csv');
       setExportType(null);
   };
@@ -187,19 +214,15 @@ const App: React.FC = () => {
   const handleImport = (e: React.ChangeEvent<HTMLInputElement>) => {
       const file = e.target.files?.[0];
       if (!file) return;
-
       const reader = new FileReader();
       reader.onload = (event) => {
           try {
               const fileContent = event.target?.result as string;
               let importedItems: VaultItem[] = [];
-
               if (file.name.endsWith('.json')) {
                   importedItems = JSON.parse(fileContent);
               } else if (file.name.endsWith('.csv')) {
-                  // Basic CSV parser for interoperability
                   const lines = fileContent.split('\n');
-                  const headers = lines[0].split(',');
                   importedItems = lines.slice(1).filter(l => l.trim()).map(line => {
                       const values = line.match(/(".*?"|[^",\s]+)(?=\s*,|\s*$)/g) || [];
                       const clean = (v: string) => v.replace(/^"|"$/g, '').replace(/""/g, '"');
@@ -219,17 +242,12 @@ const App: React.FC = () => {
                       } as Account;
                   });
               }
-
-              if (!Array.isArray(importedItems) || importedItems.length === 0) {
-                  throw new Error("Invalid or empty backup file.");
-              }
-
+              if (!Array.isArray(importedItems) || importedItems.length === 0) throw new Error("Invalid file.");
               setItems(prev => {
                   const existingIds = new Set(prev.map(i => i.id));
                   const newItems = importedItems.filter(i => !existingIds.has(i.id));
                   return [...prev, ...newItems];
               });
-              
               alert(`Successfully imported ${importedItems.length} items!`);
           } catch (err) {
               setImportError(err instanceof Error ? err.message : "Failed to parse import file.");
@@ -264,11 +282,9 @@ const App: React.FC = () => {
     const newItem: VaultItem = { ...item, id: generateUUID(), createdAt: new Date().toISOString() } as VaultItem;
     setItems(prevItems => [...prevItems, newItem]);
   }, []);
-  
   const updateItem = useCallback((updatedItem: VaultItem) => {
     setItems(prevItems => prevItems.map(item => item.id === updatedItem.id ? updatedItem : item));
   }, []);
-  
   const requestDelete = useCallback((id: string) => setItemToDeleteId(id), []);
 
   const renderView = () => {
@@ -282,8 +298,17 @@ const App: React.FC = () => {
     }
   };
 
+  if (isResetting) {
+      return (
+          <div className="min-h-screen bg-gray-900 flex flex-col items-center justify-center space-y-4">
+              <div className="w-12 h-12 border-4 border-blue-600 border-t-transparent rounded-full animate-spin" />
+              <p className="text-gray-400 font-bold uppercase tracking-widest text-xs">Purging all vault data...</p>
+          </div>
+      );
+  }
+
   if (isLocked) {
-      return <AuthScreen mode={authMode} encryptedData={encryptedDataBlob} legacyData={legacyData} onAuthenticated={handleAuthenticated} />;
+      return <AuthScreen mode={authMode} encryptedData={encryptedDataBlob} legacyData={legacyData} onAuthenticated={handleAuthenticated} onReset={handleEmergencyReset} />;
   }
 
   return (
@@ -294,62 +319,40 @@ const App: React.FC = () => {
         isOpen={isSidebarOpen} 
         setOpen={setSidebarOpen} 
         onImport={() => document.getElementById('import-input')?.click()} 
-        onExport={() => setExportType('JSON')} // Defaulting to trigger warning
-        onLock={handleLock} 
+        onExport={() => setExportType('JSON')} 
+        onLock={handleLock}
+        onShowSettings={() => setShowSettings(true)}
         onShowAbout={() => setShowAbout(true)} 
         onShowPrivacy={() => setShowPrivacy(true)} 
       />
-      <input 
-        id="import-input" 
-        type="file" 
-        accept=".json,.csv" 
-        className="hidden" 
-        onChange={handleImport}
-      />
+      <input id="import-input" type="file" accept=".json,.csv" className="hidden" onChange={handleImport} />
       
       <main className="flex-1 flex flex-col overflow-hidden">
         <header className="bg-gray-800 border-b border-gray-700 p-4 flex flex-col sm:flex-row gap-4 justify-between items-center">
           <div className="flex items-center w-full sm:w-auto">
             <button onClick={() => setSidebarOpen(true)} className="md:hidden mr-4 p-2 hover:bg-gray-700 rounded"><MenuIcon /></button>
             <h1 className="text-xl font-bold capitalize mr-8 hidden lg:block">{view}</h1>
-            
             <div className="relative flex-1 sm:min-w-[300px] group">
-                <SearchIcon className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-500 group-focus-within:text-blue-400 transition-colors" />
-                <input 
-                    type="text" 
-                    value={searchQuery}
-                    onChange={(e) => setSearchQuery(e.target.value)}
-                    placeholder={`Search ${items.length} items...`}
-                    className="w-full bg-gray-900/50 border border-gray-700 rounded-full py-2 pl-10 pr-4 text-sm focus:ring-2 focus:ring-blue-500/50 focus:border-blue-500 outline-none transition-all"
-                />
+                <SearchIcon className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-500" />
+                <input type="text" value={searchQuery} onChange={(e) => setSearchQuery(e.target.value)} placeholder={`Search ${items.length} items...`} className="w-full bg-gray-900/50 border border-gray-700 rounded-full py-2 pl-10 pr-4 text-sm focus:ring-2 focus:ring-blue-500/50 outline-none" />
             </div>
           </div>
-          
           {view !== 'dashboard' && (
-            <button 
-              onClick={() => setModal(`add-${view === 'vault' ? 'account' : view.slice(0, -1)}`)} 
-              className="bg-blue-600 hover:bg-blue-500 text-white px-4 py-2 rounded-lg flex items-center gap-2 shadow-lg shadow-blue-900/20 transition-all active:scale-95"
-            >
-              <PlusIcon className="w-4 h-4" />
-              <span className="text-sm font-bold">New {view === 'vault' ? 'Account' : view.slice(0, -1)}</span>
+            <button onClick={() => setModal(`add-${view === 'vault' ? 'account' : view.slice(0, -1)}`)} className="bg-blue-600 hover:bg-blue-500 text-white px-4 py-2 rounded-lg flex items-center gap-2 shadow-lg transition-all active:scale-95">
+              <PlusIcon className="w-4 h-4" /> <span className="text-sm font-bold">New {view === 'vault' ? 'Account' : view.slice(0, -1)}</span>
             </button>
           )}
         </header>
 
-        <div className="flex-1 overflow-y-auto p-4 sm:p-6 bg-[#0f172a]">
-          {renderView()}
-        </div>
+        <div className="flex-1 overflow-y-auto p-4 sm:p-6 bg-[#0f172a]">{renderView()}</div>
       </main>
 
       <ModalController modal={modal} setModal={setModal} addItem={addItem} updateItem={updateItem} selectedItem={selectedItem} setSelectedItem={setSelectedItem} lastAccountType={lastAccountType} setLastAccountType={setLastAccountType} />
-      
       {historyModalItem && <HistoryModal account={historyModalItem} onClose={() => setHistoryModalItem(null)} />}
-      
       {itemToDeleteId && <ConfirmationModal item={items.find(i => i.id === itemToDeleteId)!} onConfirm={() => {setItems(items.filter(i => i.id !== itemToDeleteId)); setItemToDeleteId(null);}} onCancel={() => setItemToDeleteId(null)} />}
-      
       {showAbout && <AboutModal onClose={() => setShowAbout(false)} />}
-      
       {showPrivacy && <PrivacyModal onClose={() => setShowPrivacy(false)} />}
+      {showSettings && <SettingsModal onClose={() => setShowSettings(false)} onResetVault={handleEmergencyReset} />}
       
       {exportType && (
           <Modal title="Secure Export" onClose={() => setExportType(null)}>
@@ -357,47 +360,17 @@ const App: React.FC = () => {
                   <div className="p-3 bg-yellow-900/20 border border-yellow-700/30 text-yellow-300 text-sm rounded-xl">
                       <strong>Security Risk:</strong> Exported files are unencrypted. Please delete them after use.
                   </div>
-                  
                   <div className="space-y-2">
-                      <button 
-                          onClick={handleExportJSON} 
-                          className="w-full p-4 bg-gray-700 hover:bg-gray-600 rounded-xl text-left flex justify-between items-center group transition-all"
-                      >
-                          <div>
-                              <p className="font-bold text-white">Full Vault (JSON)</p>
-                              <p className="text-xs text-gray-400">Recommended for backup. Includes Notes & Todos.</p>
-                          </div>
-                          <div className="w-8 h-8 rounded-full bg-gray-800 flex items-center justify-center group-hover:bg-blue-600 transition-colors">
-                              &rarr;
-                          </div>
+                      <button onClick={handleExportJSON} className="w-full p-4 bg-gray-700 hover:bg-gray-600 rounded-xl text-left flex justify-between items-center group transition-all">
+                          <div><p className="font-bold text-white">Full Vault (JSON)</p><p className="text-xs text-gray-400">Includes Notes & Todos.</p></div>
+                          <div className="w-8 h-8 rounded-full bg-gray-800 flex items-center justify-center group-hover:bg-blue-600">&rarr;</div>
                       </button>
-
-                      <button 
-                          onClick={handleExportCSV} 
-                          className="w-full p-4 bg-gray-700 hover:bg-gray-600 rounded-xl text-left flex justify-between items-center group transition-all"
-                      >
-                          <div>
-                              <p className="font-bold text-white">Passwords Only (CSV)</p>
-                              <p className="text-xs text-gray-400">Optimal for Excel or other password managers.</p>
-                          </div>
-                          <div className="w-8 h-8 rounded-full bg-gray-800 flex items-center justify-center group-hover:bg-green-600 transition-colors">
-                              &rarr;
-                          </div>
+                      <button onClick={handleExportCSV} className="w-full p-4 bg-gray-700 hover:bg-gray-600 rounded-xl text-left flex justify-between items-center group transition-all">
+                          <div><p className="font-bold text-white">Passwords Only (CSV)</p><p className="text-xs text-gray-400">Optimal for spreadsheets.</p></div>
+                          <div className="w-8 h-8 rounded-full bg-gray-800 flex items-center justify-center group-hover:bg-green-600">&rarr;</div>
                       </button>
                   </div>
-
                   <button onClick={() => setExportType(null)} className="w-full py-3 text-gray-500 font-bold hover:text-white transition-colors">Cancel</button>
-              </div>
-          </Modal>
-      )}
-
-      {importError && (
-          <Modal title="Import Failed" onClose={() => setImportError(null)}>
-              <div className="space-y-4">
-                  <div className="p-3 bg-red-900/20 border border-red-700/30 text-red-300 text-sm rounded-xl">
-                      {importError}
-                  </div>
-                  <button onClick={() => setImportError(null)} className="w-full py-3 bg-gray-700 hover:bg-gray-600 rounded-xl font-bold">Close</button>
               </div>
           </Modal>
       )}

@@ -30,6 +30,14 @@ const ShieldIcon = (props: any) => (
     </svg>
 );
 
+// Add Settings/Gear Icon
+const SettingsIcon = (props: any) => (
+    <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" {...props}>
+        <path d="M12.22 2h-.44a2 2 0 0 0-2 2v.18a2 2 0 0 1-1 1.73l-.43.25a2 2 0 0 1-2 0l-.15-.08a2 2 0 0 0-2.73.73l-.22.38a2 2 0 0 0 .73 2.73l.15.1a2 2 0 0 1 1 1.72v.51a2 2 0 0 1-1 1.74l-.15.09a2 2 0 0 0-.73 2.73l.22.38a2 2 0 0 0 2.73.73l.15-.08a2 2 0 0 1 2 0l.43.25a2 2 0 0 1 1 1.73V20a2 2 0 0 0 2 2h.44a2 2 0 0 0 2-2v-.18a2 2 0 0 1 1-1.73l.43-.25a2 2 0 0 1 2 0l.15.08a2 2 0 0 0 2.73-.73l.22-.39a2 2 0 0 0-.73-2.73l-.15-.08a2 2 0 0 1-1-1.74v-.5a2 2 0 0 1 1-1.74l.15-.09a2 2 0 0 0 .73-2.73l-.22-.38a2 2 0 0 0-2.73-.73l-.15.08a2 2 0 0 1-2 0l-.43-.25a2 2 0 0 1-1-1.73V4a2 2 0 0 0-2-2z"></path>
+        <circle cx="12" cy="12" r="3"></circle>
+    </svg>
+);
+
 interface SidebarProps { 
     view: View; 
     setView: (view: View) => void;
@@ -38,11 +46,12 @@ interface SidebarProps {
     onImport: () => void; 
     onExport: () => void;
     onLock: () => void;
+    onShowSettings: () => void;
     onShowAbout: () => void;
     onShowPrivacy: () => void;
 }
 
-const Sidebar: React.FC<SidebarProps> = ({ view, setView, isOpen, setOpen, onImport, onExport, onLock, onShowAbout, onShowPrivacy }) => {
+const Sidebar: React.FC<SidebarProps> = ({ view, setView, isOpen, setOpen, onImport, onExport, onLock, onShowSettings, onShowAbout, onShowPrivacy }) => {
     const NavItem: React.FC<{ targetView: View; icon: React.ReactNode; label: string }> = ({ targetView, icon, label }) => (
       <button
         onClick={() => { setView(targetView); if (window.innerWidth < 768) setOpen(false); }}
@@ -84,10 +93,13 @@ const Sidebar: React.FC<SidebarProps> = ({ view, setView, isOpen, setOpen, onImp
                     <p className="px-4 text-[10px] font-bold text-gray-600 uppercase tracking-[0.2em] mb-4">Data Portability</p>
                     <div className="space-y-1">
                         <button onClick={onImport} className="flex items-center w-full px-4 py-3 text-left text-gray-400 hover:bg-gray-700/40 hover:text-white rounded-xl transition-all border border-transparent group">
-                            <ImportIcon className="w-5 h-5 text-gray-500 group-hover:text-blue-400" /> <span className="ml-3 text-sm font-medium">Import JSON/CSV</span>
+                            <ImportIcon className="w-5 h-5 text-gray-500 group-hover:text-blue-400" /> <span className="ml-3 text-sm font-medium">Import Backup</span>
                         </button>
                         <button onClick={onExport} className="flex items-center w-full px-4 py-3 text-left text-gray-400 hover:bg-gray-700/40 hover:text-white rounded-xl transition-all border border-transparent group">
                             <DownloadIcon className="w-5 h-5 text-gray-500 group-hover:text-green-400" /> <span className="ml-3 text-sm font-medium">Export Vault...</span>
+                        </button>
+                        <button onClick={onShowSettings} className="flex items-center w-full px-4 py-3 text-left text-gray-400 hover:bg-gray-700/40 hover:text-white rounded-xl transition-all border border-transparent group">
+                            <SettingsIcon className="w-5 h-5 text-gray-500 group-hover:text-blue-400" /> <span className="ml-3 text-sm font-medium">Settings</span>
                         </button>
                         <button onClick={onLock} className="flex items-center w-full px-4 py-3 text-left text-red-400 hover:bg-red-500/10 hover:text-red-300 rounded-xl transition-all border border-transparent mt-2">
                             <LockIcon className="w-5 h-5" /> <span className="ml-3 text-sm font-bold tracking-wide">LOCK VAULT</span>

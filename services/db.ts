@@ -1,3 +1,4 @@
+
 import Dexie, { Table } from 'dexie';
 import { EncryptedData } from '../types';
 
@@ -16,7 +17,7 @@ class MVaultDB extends Dexie {
         super('mVaultDB');
         
         // Define schema
-        (this as any).version(1).stores({
+        this.version(1).stores({
             vault: 'id' 
         });
     }

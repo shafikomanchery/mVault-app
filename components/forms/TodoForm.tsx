@@ -1,6 +1,7 @@
+
 import React, { useState } from 'react';
 import { Todo, Subtask, Criticality, FormProps } from '../../types';
-import { PlusIcon, TrashIcon, CalendarIcon } from '../icons';
+import { PlusIcon, TrashIcon } from '../icons';
 
 const TodoForm: React.FC<FormProps<Todo>> = ({ onSave, onClose, itemToEdit }) => {
     const [text, setText] = useState(itemToEdit?.text || '');
@@ -28,65 +29,72 @@ const TodoForm: React.FC<FormProps<Todo>> = ({ onSave, onClose, itemToEdit }) =>
         setSubtasks(current => [...current, { id: crypto.randomUUID(), text: '', completed: false }]);
     };
 
+    const inputClass = "w-full bg-gray-900/60 border border-gray-700/50 p-4 rounded-2xl focus:ring-2 focus:ring-blue-500/50 outline-none transition-all text-white font-medium text-sm";
+    const labelClass = "text-[11px] font-bold text-gray-500 uppercase tracking-widest ml-1 mb-2 block";
+
     return (
-        <form onSubmit={handleSubmit} className="space-y-4">
-            <input 
-                type="text" 
-                value={text} 
-                onChange={e => setText(e.target.value)} 
-                placeholder="What needs to be done?" 
-                required 
-                className="w-full bg-gray-700 p-2 rounded focus:ring-2 focus:ring-blue-500 outline-none" 
-            />
-            
+        <form onSubmit={handleSubmit} className="space-y-6 pb-6">
             <div>
-                <label className="text-xs font-bold text-gray-500 uppercase ml-1 flex items-center gap-1">
-                    <CalendarIcon className="w-3 h-3" /> Deadline (Optional)
-                </label>
+                <label className={labelClass}>Task Description</label>
                 <input 
-                    type="date" 
-                    value={dueDate} 
-                    onChange={e => setDueDate(e.target.value)} 
-                    className="w-full bg-gray-700 p-2 rounded mt-1 focus:ring-2 focus:ring-blue-500 outline-none" 
+                    type="text" 
+                    value={text} 
+                    onChange={e => setText(e.target.value)} 
+                    placeholder="Clear car, pay rent, update vault..." 
+                    required 
+                    className={inputClass} 
                 />
             </div>
-
-            <div className="space-y-2">
-                <p className="text-xs font-bold text-gray-500 uppercase ml-1">Subtasks</p>
-                {subtasks.map((st) => (
-                    <div key={st.id} className="flex items-center gap-2">
-                        <input 
-                            type="text" 
-                            value={st.text} 
-                            onChange={e => setSubtasks(current => current.map(s => s.id === st.id ? {...s, text: e.target.value} : s))} 
-                            placeholder="Add sub-task..." 
-                            className="w-full bg-gray-600 p-2 rounded text-sm focus:ring-1 focus:ring-blue-400 outline-none"
-                        />
-                        <button type="button" onClick={() => setSubtasks(current => current.filter(s => s.id !== st.id))} className="text-red-400 hover:text-red-300 p-1">
-                            <TrashIcon className="w-4 h-4"/>
-                        </button>
-                    </div>
-                ))}
-                <button type="button" onClick={addSubtask} className="w-full text-left text-blue-400 hover:text-blue-300 p-2 rounded text-sm flex items-center gap-2 border border-dashed border-gray-600 hover:border-blue-400 transition-colors">
-                    <PlusIcon className="w-4 h-4" /> Add Subtask
-                </button>
+            
+            <div className="grid grid-cols-2 gap-4">
+                <div>
+                    <label className={labelClass}>Due Date</label>
+                    <input 
+                        type="date" 
+                        value={dueDate} 
+                        onChange={e => setDueDate(e.target.value)} 
+                        className={inputClass} 
+                    />
+                </div>
+                <div>
+                    <label className={labelClass}>Priority</label>
+                    <select 
+                        value={criticality} 
+                        onChange={e => setCriticality(e.target.value as Criticality)} 
+                        className={inputClass}
+                    >
+                        <option>Low</option>
+                        <option>Medium</option>
+                        <option>High</option>
+                    </select>
+                </div>
             </div>
 
-            <div>
-                <p className="text-xs font-bold text-gray-500 uppercase ml-1 mb-1">Priority</p>
-                <select 
-                    value={criticality} 
-                    onChange={e => setCriticality(e.target.value as Criticality)} 
-                    className="w-full bg-gray-700 p-2 rounded focus:ring-2 focus:ring-blue-500 outline-none"
-                >
-                    <option>Low</option>
-                    <option>Medium</option>
-                    <option>High</option>
-                </select>
+            <div className="space-y-3">
+                <label className={labelClass}>Breakdown Subtasks</label>
+                <div className="space-y-2.5">
+                    {subtasks.map((st) => (
+                        <div key={st.id} className="flex items-center gap-3 animate-in fade-in slide-in-from-left-2">
+                            <input 
+                                type="text" 
+                                value={st.text} 
+                                onChange={e => setSubtasks(current => current.map(s => s.id === st.id ? {...s, text: e.target.value} : s))} 
+                                placeholder="Add step..." 
+                                className="w-full bg-gray-900/40 border border-gray-700/30 p-3 rounded-xl text-xs focus:ring-1 focus:ring-blue-400 outline-none font-medium"
+                            />
+                            <button type="button" onClick={() => setSubtasks(current => current.filter(s => s.id !== st.id))} className="text-red-500/60 hover:text-red-500 p-2 shrink-0">
+                                <TrashIcon className="w-4 h-4"/>
+                            </button>
+                        </div>
+                    ))}
+                    <button type="button" onClick={addSubtask} className="w-full py-3.5 rounded-2xl text-[10px] font-black uppercase tracking-widest text-blue-400 border-2 border-dashed border-gray-700 hover:border-blue-500/50 hover:bg-blue-500/5 transition-all flex items-center justify-center gap-2">
+                        <PlusIcon className="w-4 h-4" /> Add Milestone
+                    </button>
+                </div>
             </div>
 
-            <button type="submit" className="w-full bg-blue-600 p-3 rounded-lg font-bold hover:bg-blue-700 transition-colors shadow-lg mt-2">
-                Save Task
+            <button type="submit" className="w-full bg-blue-600 p-4 rounded-2xl font-black text-white hover:bg-blue-500 transition-all shadow-xl shadow-blue-900/30 active:scale-95 tracking-wide">
+                SAVE TASK
             </button>
         </form>
     );

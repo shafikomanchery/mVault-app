@@ -1,3 +1,4 @@
+
 import React from 'react';
 import { VaultItem, Account, Note, Event, Todo, AccountType, FormProps } from '../types';
 import { Modal } from './Shared';
@@ -14,10 +15,11 @@ interface ModalControllerProps {
   selectedItem: VaultItem | null;
   setSelectedItem: (item: VaultItem | null) => void;
   lastAccountType: AccountType,
-  setLastAccountType: (type: AccountType) => void
+  setLastAccountType: (type: AccountType) => void;
+  items: VaultItem[]; // Added to provide suggestions
 }
 
-const ModalController: React.FC<ModalControllerProps> = ({ modal, setModal, addItem, updateItem, selectedItem, setSelectedItem, lastAccountType, setLastAccountType }) => {
+const ModalController: React.FC<ModalControllerProps> = ({ modal, setModal, addItem, updateItem, selectedItem, setSelectedItem, lastAccountType, setLastAccountType, items }) => {
   const handleClose = () => {
     setSelectedItem(null);
     setModal(null);
@@ -40,15 +42,16 @@ const ModalController: React.FC<ModalControllerProps> = ({ modal, setModal, addI
         <AccountForm {...formProps as FormProps<Account>} lastAccountType={lastAccountType} setLastAccountType={setLastAccountType}/>
       </Modal>;
     case 'note':
+      const existingNotes = items.filter((i): i is Note => i.type === 'note');
       return <Modal title={isEdit ? 'Edit Note' : 'Add Note'} onClose={handleClose}>
-        <NoteForm {...formProps as FormProps<Note>} />
+        <NoteForm {...formProps as FormProps<Note>} existingNotes={existingNotes} />
       </Modal>;
     case 'event':
       return <Modal title={isEdit ? 'Edit Event' : 'Add Event'} onClose={handleClose}>
         <EventForm {...formProps as FormProps<Event>} />
       </Modal>;
     case 'todo':
-      return <Modal title={isEdit ? 'Edit Todo' : 'Add Todo'} onClose={handleClose}>
+      return <Modal title={isEdit ? 'Edit Task' : 'Add Task'} onClose={handleClose}>
         <TodoForm {...formProps as FormProps<Todo>} />
       </Modal>;
     default:

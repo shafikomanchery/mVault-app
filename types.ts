@@ -15,6 +15,7 @@ export const RecurringFrequency = {
 } as const;
 
 export type AccountType = 'website' | 'bank' | 'email' | 'subscription' | 'other';
+export type NoteCategory = string; // Changed to dynamic string
 
 export interface HistoryEntry {
     timestamp: string;
@@ -40,7 +41,7 @@ export interface BaseItem {
     type: string;
     createdAt: string;
     criticality: Criticality;
-    tags?: string[]; // New tagging system
+    tags?: string[];
 }
 
 export interface Account extends BaseItem {
@@ -59,6 +60,7 @@ export interface Note extends BaseItem {
     type: 'note';
     title: string;
     content: string;
+    category: NoteCategory;
 }
 
 export interface Event extends BaseItem {
@@ -67,6 +69,7 @@ export interface Event extends BaseItem {
     date: string;
     description: string;
     recurring: RecurringFrequency;
+    completed: boolean;
 }
 
 export interface Todo extends BaseItem {

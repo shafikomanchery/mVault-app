@@ -39,6 +39,30 @@ const generateUUID = () => {
     });
 };
 
+const parseCSVLine = (line: string): string[] => {
+    const result: string[] = [];
+    let cur = '';
+    let inQuotes = false;
+    for (let i = 0; i < line.length; i++) {
+        const char = line[i];
+        if (char === '"') {
+            if (inQuotes && line[i + 1] === '"') {
+                cur += '"';
+                i++;
+            } else {
+                inQuotes = !inQuotes;
+            }
+        } else if (char === ',' && !inQuotes) {
+            result.push(cur);
+            cur = '';
+        } else {
+            cur += char;
+        }
+    }
+    result.push(cur);
+    return result;
+};
+
 const App: React.FC = () => {
   const [isLocked, setIsLocked] = useState(true);
   const [isResetting, setIsResetting] = useState(false);
@@ -48,9 +72,11 @@ const App: React.FC = () => {
   const [legacyData, setLegacyData] = useState<VaultItem[] | undefined>(undefined);
 
   const [view, setView] = useState<View>('dashboard');
+  const [activeCategory, setActiveCategory] = useState<AccountType | null>(null);
   const [items, setItems] = useState<VaultItem[]>([]);
   const [searchQuery, setSearchQuery] = useState('');
   const [lastAccountType, setLastAccountType] = useLocalStorage<AccountType>('lastAccountType', 'website');
+  const [lastExportDate, setLastExportDate] = useLocalStorage<string | null>('lastExportDate', null);
   const [isSidebarOpen, setSidebarOpen] = useState(false);
   const [showAbout, setShowAbout] = useState(false);
   const [showPrivacy, setShowPrivacy] = useState(false);
@@ -71,23 +97,16 @@ const App: React.FC = () => {
   const handleEmergencyReset = async () => {
       setIsResetting(true);
       try {
-          // 1. Force close and delete IndexedDB
           db.close();
           await Dexie.delete('mVaultDB');
-          
-          // 2. Clear all storage types
           localStorage.clear();
           sessionStorage.clear();
-          
-          // 3. Unregister Service Worker if present
           if ('serviceWorker' in navigator) {
               const registrations = await navigator.serviceWorker.getRegistrations();
               for (const registration of registrations) {
                   await registration.unregister();
               }
           }
-
-          // 4. Force hard reload from server
           setTimeout(() => {
               window.location.replace(window.location.origin);
           }, 1000);
@@ -165,6 +184,7 @@ const App: React.FC = () => {
   const handleExportJSON = () => {
       const dataStr = JSON.stringify(items, null, 2);
       downloadFile(dataStr, 'json');
+      setLastExportDate(new Date().toISOString());
       setExportType(null);
   };
 
@@ -175,7 +195,7 @@ const App: React.FC = () => {
           setExportType(null);
           return;
       }
-      let csvContent = "name,url,username,password,accountType,criticality,tags\n";
+      let csvContent = "name,url,username,password,accountType,criticality,tags,expiryDate\n";
       const escape = (val: string | undefined) => {
           if (!val) return '""';
           const escaped = val.replace(/"/g, '""');
@@ -189,11 +209,13 @@ const App: React.FC = () => {
               escape(acc.password),
               escape(acc.accountType),
               escape(acc.criticality),
-              escape(acc.tags?.join(';'))
+              escape(acc.tags?.join(';')),
+              escape(acc.expiryDate)
           ].join(',');
           csvContent += row + "\n";
       });
       downloadFile(csvContent, 'csv');
+      setLastExportDate(new Date().toISOString());
       setExportType(null);
   };
 
@@ -222,27 +244,27 @@ const App: React.FC = () => {
               if (file.name.endsWith('.json')) {
                   importedItems = JSON.parse(fileContent);
               } else if (file.name.endsWith('.csv')) {
-                  const lines = fileContent.split('\n');
+                  const lines = fileContent.split(/\r?\n/);
                   importedItems = lines.slice(1).filter(l => l.trim()).map(line => {
-                      const values = line.match(/(".*?"|[^",\s]+)(?=\s*,|\s*$)/g) || [];
-                      const clean = (v: string) => v.replace(/^"|"$/g, '').replace(/""/g, '"');
+                      const values = parseCSVLine(line);
                       return {
                           id: generateUUID(),
                           type: 'account',
-                          name: clean(values[0] || 'Imported Account'),
-                          url: clean(values[1] || ''),
-                          username: clean(values[2] || ''),
-                          password: clean(values[3] || ''),
-                          accountType: (clean(values[4] || 'other') as AccountType),
-                          criticality: (clean(values[5] || 'Medium') as any),
-                          tags: values[6] ? clean(values[6]).split(';') : [],
+                          name: values[0] || 'Imported Account',
+                          url: values[1] || '',
+                          username: values[2] || '',
+                          password: values[3] || '',
+                          accountType: (values[4] || 'other') as AccountType,
+                          criticality: (values[5] || 'Medium') as any,
+                          tags: values[6] ? values[6].split(';') : [],
+                          expiryDate: values[7] || undefined,
                           createdAt: new Date().toISOString(),
                           history: [],
                           priority: 0
                       } as Account;
                   });
               }
-              if (!Array.isArray(importedItems) || importedItems.length === 0) throw new Error("Invalid file.");
+              if (!Array.isArray(importedItems) || importedItems.length === 0) throw new Error("Invalid or empty file.");
               setItems(prev => {
                   const existingIds = new Set(prev.map(i => i.id));
                   const newItems = importedItems.filter(i => !existingIds.has(i.id));
@@ -251,6 +273,7 @@ const App: React.FC = () => {
               alert(`Successfully imported ${importedItems.length} items!`);
           } catch (err) {
               setImportError(err instanceof Error ? err.message : "Failed to parse import file.");
+              alert("Import failed: " + (err instanceof Error ? err.message : "Unknown error"));
           }
       };
       reader.readAsText(file);
@@ -287,15 +310,47 @@ const App: React.FC = () => {
   }, []);
   const requestDelete = useCallback((id: string) => setItemToDeleteId(id), []);
 
+  const handleNavigateFromDashboard = (view: View, category?: AccountType) => {
+      setView(view);
+      if (category) setActiveCategory(category);
+      else setActiveCategory(null);
+  };
+
   const renderView = () => {
     switch (view) {
-      case 'dashboard': return <DashboardView items={filteredItems} onEdit={(i) => {setSelectedItem(i); setModal(`edit-${i.type}`);}} onDelete={requestDelete} />;
-      case 'vault': return <VaultView accounts={accounts} onEdit={(i) => {setSelectedItem(i); setModal('edit-account');}} onDelete={requestDelete} onShowHistory={setHistoryModalItem}/>;
+      case 'dashboard': return <DashboardView items={filteredItems} onNavigate={handleNavigateFromDashboard} />;
+      case 'vault': return <VaultView accounts={accounts} onEdit={(i) => {setSelectedItem(i); setModal('edit-account');}} onDelete={requestDelete} onShowHistory={setHistoryModalItem} initialCategory={activeCategory} onCategoryChange={setActiveCategory} />;
       case 'notes': return <NotesView notes={notes} onEdit={(i) => {setSelectedItem(i); setModal('edit-note');}} onDelete={requestDelete} />;
-      case 'events': return <EventsView events={events} onEdit={(i) => {setSelectedItem(i); setModal('edit-event');}} onDelete={requestDelete} />;
+      case 'events': return <EventsView events={events} onEdit={(i) => {setSelectedItem(i); setModal('edit-event');}} onDelete={requestDelete} updateEvent={updateItem as any} />;
       case 'todos': return <TodosView todos={todos} onEdit={(i) => {setSelectedItem(i); setModal('edit-todo');}} onDelete={requestDelete} updateTodo={updateItem as any} />;
       default: return null;
     }
+  };
+
+  const getHeaderTitle = () => {
+      switch(view) {
+          case 'dashboard': return 'Dashboard';
+          case 'vault': return 'Accounts';
+          case 'notes': return 'Notes';
+          case 'events': return 'Events';
+          case 'todos': return 'Tasks';
+          default: return '';
+      }
+  };
+
+  const getButtonLabel = () => {
+      switch(view) {
+          case 'vault': return 'Account';
+          case 'notes': return 'Note';
+          case 'events': return 'Event';
+          case 'todos': return 'Task';
+          default: return '';
+      }
+  };
+
+  const handleAddNew = () => {
+    const type = view === 'vault' ? 'account' : view.slice(0, -1);
+    setModal(`add-${type}`);
   };
 
   if (isResetting) {
@@ -312,7 +367,7 @@ const App: React.FC = () => {
   }
 
   return (
-    <div className="flex h-screen bg-gray-900 text-gray-100">
+    <div className="flex h-screen bg-gray-900 text-gray-100 relative">
       <Sidebar 
         view={view} 
         setView={setView} 
@@ -323,31 +378,45 @@ const App: React.FC = () => {
         onLock={handleLock}
         onShowSettings={() => setShowSettings(true)}
         onShowAbout={() => setShowAbout(true)} 
-        onShowPrivacy={() => setShowPrivacy(true)} 
+        onShowPrivacy={() => setShowPrivacy(true)}
+        lastExportDate={lastExportDate}
       />
       <input id="import-input" type="file" accept=".json,.csv" className="hidden" onChange={handleImport} />
       
       <main className="flex-1 flex flex-col overflow-hidden">
-        <header className="bg-gray-800 border-b border-gray-700 p-4 flex flex-col sm:flex-row gap-4 justify-between items-center">
+        <header className="bg-gray-800 border-b border-gray-700 p-4 flex flex-col sm:flex-row gap-4 justify-between items-center z-10">
           <div className="flex items-center w-full sm:w-auto">
             <button onClick={() => setSidebarOpen(true)} className="md:hidden mr-4 p-2 hover:bg-gray-700 rounded"><MenuIcon /></button>
-            <h1 className="text-xl font-bold capitalize mr-8 hidden lg:block">{view}</h1>
+            <h1 className="text-xl font-bold capitalize mr-8 hidden lg:block">{getHeaderTitle()}</h1>
             <div className="relative flex-1 sm:min-w-[300px] group">
                 <SearchIcon className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-500" />
                 <input type="text" value={searchQuery} onChange={(e) => setSearchQuery(e.target.value)} placeholder={`Search ${items.length} items...`} className="w-full bg-gray-900/50 border border-gray-700 rounded-full py-2 pl-10 pr-4 text-sm focus:ring-2 focus:ring-blue-500/50 outline-none" />
             </div>
           </div>
           {view !== 'dashboard' && (
-            <button onClick={() => setModal(`add-${view === 'vault' ? 'account' : view.slice(0, -1)}`)} className="bg-blue-600 hover:bg-blue-500 text-white px-4 py-2 rounded-lg flex items-center gap-2 shadow-lg transition-all active:scale-95">
-              <PlusIcon className="w-4 h-4" /> <span className="text-sm font-bold">New {view === 'vault' ? 'Account' : view.slice(0, -1)}</span>
+            <button onClick={handleAddNew} className="hidden sm:flex bg-blue-600 hover:bg-blue-500 text-white px-4 py-2 rounded-lg items-center gap-2 shadow-lg transition-all active:scale-95">
+              <PlusIcon className="w-4 h-4" /> <span className="text-sm font-bold">New {getButtonLabel()}</span>
             </button>
           )}
         </header>
 
-        <div className="flex-1 overflow-y-auto p-4 sm:p-6 bg-[#0f172a]">{renderView()}</div>
+        <div className="flex-1 overflow-y-auto p-4 sm:p-6 bg-[#0f172a] relative">
+            {renderView()}
+        </div>
       </main>
 
-      <ModalController modal={modal} setModal={setModal} addItem={addItem} updateItem={updateItem} selectedItem={selectedItem} setSelectedItem={setSelectedItem} lastAccountType={lastAccountType} setLastAccountType={setLastAccountType} />
+      {/* Mobile Floating Action Button */}
+      {view !== 'dashboard' && (
+        <button 
+          onClick={handleAddNew} 
+          className="sm:hidden fixed bottom-6 right-6 w-14 h-14 bg-blue-600 text-white rounded-full shadow-2xl flex items-center justify-center z-20 active:scale-90 transition-transform ring-4 ring-gray-900"
+          aria-label={`Add new ${getButtonLabel()}`}
+        >
+          <PlusIcon className="w-8 h-8" />
+        </button>
+      )}
+
+      <ModalController modal={modal} setModal={setModal} addItem={addItem} updateItem={updateItem} selectedItem={selectedItem} setSelectedItem={setSelectedItem} lastAccountType={lastAccountType} setLastAccountType={setLastAccountType} items={items} />
       {historyModalItem && <HistoryModal account={historyModalItem} onClose={() => setHistoryModalItem(null)} />}
       {itemToDeleteId && <ConfirmationModal item={items.find(i => i.id === itemToDeleteId)!} onConfirm={() => {setItems(items.filter(i => i.id !== itemToDeleteId)); setItemToDeleteId(null);}} onCancel={() => setItemToDeleteId(null)} />}
       {showAbout && <AboutModal onClose={() => setShowAbout(false)} />}
@@ -362,11 +431,11 @@ const App: React.FC = () => {
                   </div>
                   <div className="space-y-2">
                       <button onClick={handleExportJSON} className="w-full p-4 bg-gray-700 hover:bg-gray-600 rounded-xl text-left flex justify-between items-center group transition-all">
-                          <div><p className="font-bold text-white">Full Vault (JSON)</p><p className="text-xs text-gray-400">Includes Notes & Todos.</p></div>
+                          <div><p className="font-bold text-white">Full Vault (JSON)</p><p className="text-xs text-gray-400">Includes Notes & Tasks.</p></div>
                           <div className="w-8 h-8 rounded-full bg-gray-800 flex items-center justify-center group-hover:bg-blue-600">&rarr;</div>
                       </button>
                       <button onClick={handleExportCSV} className="w-full p-4 bg-gray-700 hover:bg-gray-600 rounded-xl text-left flex justify-between items-center group transition-all">
-                          <div><p className="font-bold text-white">Passwords Only (CSV)</p><p className="text-xs text-gray-400">Optimal for spreadsheets.</p></div>
+                          <div><p className="font-bold text-white">Accounts Only (CSV)</p><p className="text-xs text-gray-400">Optimal for spreadsheets.</p></div>
                           <div className="w-8 h-8 rounded-full bg-gray-800 flex items-center justify-center group-hover:bg-green-600">&rarr;</div>
                       </button>
                   </div>

@@ -3,7 +3,7 @@ import React, { useState, useEffect } from 'react';
 import { EncryptedData, VaultItem } from '../types';
 import { createVault, unlockVault } from '../utils/security';
 import { authenticateBiometrics } from '../utils/biometrics';
-import { ShieldCheckIcon, TrashIcon, KeyIcon } from './icons';
+import { ShieldCheckIcon, TrashIcon, KeyIcon, AlertTriangleIcon } from './icons';
 
 type AuthMode = 'login' | 'setup' | 'migration';
 
@@ -84,7 +84,7 @@ const AuthScreen: React.FC<AuthScreenProps> = ({ mode, encryptedData, legacyData
                         <ShieldCheckIcon className="w-10 h-10 text-blue-400" />
                     </div>
                     <h1 className="text-4xl font-extrabold text-white tracking-tight mb-2">mVault</h1>
-                    <p className="text-gray-400 text-sm font-medium tracking-widest uppercase">Secure Password Manager</p>
+                    <p className="text-gray-400 text-[10px] sm:text-xs font-bold tracking-[0.3em] uppercase">Your Digital Sanctuary</p>
                 </div>
 
                 <div className="bg-gray-800/40 backdrop-blur-xl border border-gray-700/50 rounded-3xl p-8 shadow-2xl overflow-hidden relative">
@@ -93,6 +93,18 @@ const AuthScreen: React.FC<AuthScreenProps> = ({ mode, encryptedData, legacyData
                     <h2 className="text-xl font-bold text-white mb-6 text-center">
                         {mode === 'login' ? 'Unlock Vault' : 'Initialize Vault'}
                     </h2>
+
+                    {(mode === 'setup' || mode === 'migration') && (
+                        <div className="p-4 bg-amber-500/10 border border-amber-500/20 rounded-2xl mb-6 flex gap-3">
+                            <AlertTriangleIcon className="w-5 h-5 text-amber-500 shrink-0 mt-0.5" />
+                            <div className="space-y-1">
+                                <p className="text-[10px] font-black text-amber-500 uppercase tracking-widest">Permanent Key Warning</p>
+                                <p className="text-[11px] text-amber-200/70 leading-relaxed">
+                                    This password is your <strong>only</strong> access to this vault. There is no reset feature. If lost, your data cannot be recovered.
+                                </p>
+                            </div>
+                        </div>
+                    )}
 
                     <form onSubmit={handleSubmit} className="space-y-5">
                         <div className="space-y-2">

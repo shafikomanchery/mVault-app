@@ -1,19 +1,47 @@
+
 import React from 'react';
 import { Note } from '../../types';
 import { CriticalityBadge } from '../Shared';
-import { EditIcon, TrashIcon } from '../icons';
+import { TrashIcon, StickyNoteIcon, ChevronLeftIcon } from '../icons';
 
 const NoteCard: React.FC<{note: Note, onEdit: () => void, onDelete: () => void}> = ({note, onEdit, onDelete}) => {
     return (
-         <div className="bg-gray-800 border border-yellow-500/30 p-4 rounded-lg shadow-md flex flex-col h-full">
-            <div className="flex justify-between items-start mb-2">
-                <h3 className="font-bold text-lg text-yellow-300">{note.title}</h3>
-                <CriticalityBadge criticality={note.criticality} />
-            </div>
-            <p className="text-gray-300 text-sm flex-1">{note.content.substring(0, 100)}{note.content.length > 100 ? '...' : ''}</p>
-             <div className="flex justify-end gap-2 pt-2 border-t border-gray-700 mt-3">
-                <button onClick={onEdit} className="p-2 text-gray-400 hover:text-blue-400"><EditIcon className="w-5 h-5"/></button>
-                <button onClick={onDelete} className="p-2 text-gray-400 hover:text-red-400"><TrashIcon className="w-5 h-5"/></button>
+         <div 
+            onClick={onEdit}
+            className="group relative bg-gray-800/40 backdrop-blur-sm border border-gray-700/50 rounded-2xl overflow-hidden hover:bg-gray-800/60 hover:border-blue-500/30 transition-all active:scale-[0.98] cursor-pointer shadow-sm hover:shadow-md"
+        >
+            <div className="p-5 flex items-start justify-between gap-4">
+                <div className="flex-1 min-w-0">
+                    <div className="flex items-center gap-3 mb-2">
+                        <div className="p-2 bg-yellow-500/10 text-yellow-500 rounded-xl">
+                            <StickyNoteIcon className="w-4 h-4" />
+                        </div>
+                        <h3 className="font-bold text-base text-white truncate group-hover:text-blue-400 transition-colors leading-tight">
+                            {note.title || 'Untitled Note'}
+                        </h3>
+                    </div>
+                    <p className="text-gray-400 text-xs sm:text-sm line-clamp-3 leading-relaxed font-medium mb-4">
+                        {note.content || 'No content...'}
+                    </p>
+                    <div className="flex items-center justify-between">
+                        <CriticalityBadge criticality={note.criticality} />
+                        <span className="text-[9px] font-black text-gray-600 uppercase tracking-widest">
+                            {new Date(note.createdAt).toLocaleDateString()}
+                        </span>
+                    </div>
+                </div>
+                
+                <div className="flex flex-col items-center justify-between self-stretch shrink-0">
+                    <div className="p-2 rounded-full bg-gray-900/40 text-gray-500 group-hover:text-blue-400 transition-colors">
+                        <ChevronLeftIcon className="w-4 h-4 rotate-180" />
+                    </div>
+                    <button 
+                        onClick={(e) => { e.stopPropagation(); onDelete(); }}
+                        className="p-2 text-gray-600 hover:text-red-400 transition-colors mt-auto"
+                    >
+                        <TrashIcon className="w-4 h-4" />
+                    </button>
+                </div>
             </div>
         </div>
     )

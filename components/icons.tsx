@@ -50,3 +50,4 @@ export const AlertTriangleIcon = (props: IconProps) => <Icon {...props}><path d=
 export const RotateCwIcon = (props: IconProps) => <Icon {...props}><path d="M21 2v6h-6"/><path d="M3 12a9 9 0 1 1 1.646-5.26L3 8"/></Icon>;
 export const CopyIcon = (props: IconProps) => <Icon {...props}><rect x="9" y="9" width="13" height="13" rx="2" ry="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></Icon>;
 export const CheckIcon = (props: IconProps) => <Icon {...props}><polyline points="20 6 9 17 4 12"/></Icon>;
+export const ChevronLeftIcon = (props: IconProps) => <Icon {...props}><polyline points="15 18 9 12 15 6" /></Icon>;
